@@ -7,10 +7,7 @@ project(perf-analysis
         DESCRIPTION "c++ Performance analysis"
         LANGUAGES CXX)
 
-set (perf_analysis_files
-        src/performance.cpp )
-
-add_library(perf-analysis ${perf_analysis_files})
+add_library(perf-analysis src/performance.cpp)
 
 set_target_properties(perf-analysis
         PROPERTIES
