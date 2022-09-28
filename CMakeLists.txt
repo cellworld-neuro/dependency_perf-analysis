@@ -27,9 +27,7 @@ target_include_directories(perf-analysis
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_include_directories(perf-analysis
-        PRIVATE
-        include)
+include_directories(include)
 
 ###
 ### LIBRARY INSTALLATION
