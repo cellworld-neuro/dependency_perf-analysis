@@ -52,8 +52,104 @@ namespace performance {
         std::cout << endl;
     }
 
+    void Summary::write_report() {
+        ofstream report;
+        report.open("perf_report.html");
+        report <<
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<style>\n"
+        "\n"
+        "  .tree{\n"
+        "    --spacing : 1.5rem;\n"
+        "    --radius  : 10px;\n"
+        "    \n"
+        "  }\n"
+        "\n"
+        "  .tree li{\n"
+        "    display      : block;\n"
+        "    position     : relative;\n"
+        "    padding-left : calc(2 * var(--spacing) - var(--radius) - 2px);\n"
+        "  }\n"
+        "\n"
+        "  .tree ul{\n"
+        "    margin-left  : calc(var(--radius) - var(--spacing));\n"
+        "    padding-left : 0;\n"
+        "  }\n"
+        "\n"
+        "  .tree ul li{\n"
+        "    border-left : 2px solid #ddd;\n"
+        "  }\n"
+        "\n"
+        "  .tree ul li:last-child{\n"
+        "    border-color : transparent;\n"
+        "  }\n"
+        "\n"
+        "  .tree ul li::before{\n"
+        "    content      : '';\n"
+        "    display      : block;\n"
+        "    position     : absolute;\n"
+        "    top          : calc(var(--spacing) / -2);\n"
+        "    left         : -2px;\n"
+        "    width        : calc(var(--spacing) + 2px);\n"
+        "    height       : calc(var(--spacing) + 1px);\n"
+        "    border       : solid #ddd;\n"
+        "    border-width : 0 0 2px 2px;\n"
+        "  }\n"
+        "\n"
+        "  .tree summary{\n"
+        "    display : block;\n"
+        "    cursor  : pointer;\n"
+        "  }\n"
+        "\n"
+        "  .tree summary::marker,\n"
+        "  .tree summary::-webkit-details-marker{\n"
+        "    display : none;\n"
+        "  }\n"
+        "\n"
+        "  .tree summary:focus{\n"
+        "    outline : none;\n"
+        "  }\n"
+        "\n"
+        "  .tree summary:focus-visible{\n"
+        "    outline : 1px dotted #000;\n"
+        "  }\n"
+        "\n"
+        "  .tree li::after,\n"
+        "  .tree summary::before{\n"
+        "    content       : '';\n"
+        "    display       : block;\n"
+        "    position      : absolute;\n"
+        "    top           : calc(var(--spacing) / 2 - var(--radius));\n"
+        "    left          : calc(var(--spacing) - var(--radius) - 1px);\n"
+        "    width         : calc(2 * var(--radius));\n"
+        "    height        : calc(2 * var(--radius));\n"
+        "    border-radius : 50%;\n"
+        "    background    : #ddd;\n"
+        "  }\n"
+        "\n"
+        "  .tree summary::before{\n"
+        "    z-index    : 1;\n"
+        "    background : #696 url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iNDAiIGhlaWdodD0iMjAiPgogIDxnIGZpbGw9IiNmZmYiPgogICAgPHBhdGggZD0ibTUgOWg0di00aDJ2NGg0djJoLTR2NGgtMnYtNGgtNHoiLz4KICAgIDxwYXRoIGQ9Im0yNSA5aDEwdjJoLTEweiIvPgogIDwvZz4KPC9zdmc+Cg==') 0 0;\n"
+        "  }\n"
+        "\n"
+        "  .tree details[open] > summary::before{\n"
+        "    background-position : calc(-2 * var(--radius)) 0;\n"
+        "  }\n"
+        "\n"
+        "</style>\n"
+        "<body class=\"tree\">\n";
+        root_counter.write(report, 100,1);
+        report <<
+        "</body>\n"
+        "</html>";
+        report.close();
+    }
+
+
     Summary::~Summary() {
         show_report();
+        write_report();
     }
 
     void Summary::aggregate(Analysis &) {
@@ -136,6 +232,35 @@ namespace performance {
             std::cout << std::right << std::setw(10) << fixed << setprecision(2) << ((float)(time - children_total) / (float) time * 100.0 * r);
             std::cout << std::endl;
         }
+    }
+
+    void Analysis::Counter::write(std::ofstream &report, int name_size, float r) {
+        report << "<li><details><summary>";
+        report << name;
+        report << std::right << std::setw(10) << thread_count;
+        report << std::right << std::setw(10) << call_count;
+        report << std::right << std::setw(10) << fixed << setprecision(2) << ((float) time) / 1000000.0;
+        report << std::right << std::setw(10) << fixed << "<meter id=\"disk_d\" value=\"" << r << "\">" << setprecision(2) << (r * 100.0) << "%</meter>";
+        report << "</summary>";
+        long long int children_total = 0;
+        if (!children.empty()) {
+            report << "<ul>";
+        }
+        for (auto &c:children) {
+            children_total += c->time;
+            c->write(report, name_size, r * ( (float)c->time / (float) time));
+        }
+        if (!children.empty()) {
+            report << "<li><summary>";
+            report << "Untracked";
+            report << std::right << std::setw(10) << fixed << setprecision(2) << ((float)time - children_total) / 1000000.0;
+            report << std::right << std::setw(10) << fixed << "<meter id=\"disk_d\" value=\"" << ((float)(time - children_total) / (float) time * r) << "\">" << setprecision(2) << ((float)(time - children_total) / (float) time * 100.0 * r) << "%</meter>";
+            report << "</summary>";
+            report << "</li>";
+            report << "</ul>";
+        }
+        report << "</details>";
+        report << "</li>";
     }
 
     void Analysis::Counter::reset() {

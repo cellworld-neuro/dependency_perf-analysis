@@ -3,6 +3,7 @@
 #include <chrono>
 #include <map>
 #include <vector>
+#include <fstream>
 
 #define CONCAT_INNER(a, b) a ## b
 #define CONCAT(a, b) CONCAT_INNER(a, b)
@@ -18,6 +19,7 @@
     #define PERF_START(T) performance::Analysis::performance_analysis().start(T)
     #define PERF_STOP(T) performance::Analysis::performance_analysis().stop(T)
 #endif
+
 namespace performance{
 
     struct Analysis {
@@ -33,6 +35,7 @@ namespace performance{
             Counter &add_child(const std::string &);
             void aggregate(Counter &);
             void show(int, int, float);
+            void write(std::ofstream &, int, float);
             void reset();
             std::string name;
             std::chrono::time_point<std::chrono::high_resolution_clock> check_point;
@@ -50,6 +53,7 @@ namespace performance{
     struct Summary{
         void aggregate(Analysis &);
         void show_report();
+        void write_report();
         ~Summary();
         std::chrono::time_point<std::chrono::high_resolution_clock> performance_analysis_start_time = std::chrono::high_resolution_clock::now();
         Analysis::Counter root_counter{"main", nullptr};
